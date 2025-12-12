@@ -7,7 +7,7 @@ public class login{
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         System.out.println("日志信息：系统\n");
 
-        // 添加  标签
+        // 添加标签
         JLabel label = new JLabel("请继续开发一下内容");
         frame.getContentPane().add(label);
 
