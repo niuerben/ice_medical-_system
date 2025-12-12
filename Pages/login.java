@@ -1,9 +1,12 @@
 import javax.swing.*;
 public class login{
     public static void main(String[] args){
-        // 创建及设置窗口
+        // 创建标题为"欢迎使用AscentSys应用"的窗口
         JFrame frame = new JFrame("欢迎使用AscentSys应用");
-        frame.setSize(400, 300);
+
+        // 设置窗口大小和关闭操作
+        frame.setSize(1600, 1200);
+        frame.setLocation(400,300);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         System.out.println("日志信息：系统\n");
 
