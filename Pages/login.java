@@ -1,20 +1,41 @@
 import javax.swing.*;
+// import javax.swing.plaf.basic.BasicInternalFrameTitlePane.MaximizeAction;
 public class login{
     public static void main(String[] args){
         // 创建标题为"欢迎使用AscentSys应用"的窗口
         JFrame frame = new JFrame("欢迎使用AscentSys应用");
+        init_frame(frame);
+        // 创建登录对话框
+        JDialog dialog = new JDialog(frame, "登录界面");
+        init_dialog(dialog, frame);
+        
+        
+    }
 
+    public static void init_frame(JFrame frame){
         // 设置窗口大小和关闭操作
         frame.setSize(1600, 1200);
         frame.setLocation(400,300);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        System.out.println("日志信息：系统\n");
+        // frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
+        System.out.println("日志信息：登录面窗口打开\n");
 
         // 添加标签
         JLabel label = new JLabel("请继续开发一下内容");
         frame.getContentPane().add(label);
 
-        frame.pack();
         frame.setVisible(true);
+        frame.pack();
+
+        // 设置关闭逻辑
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    }
+
+    public static void init_dialog(JDialog dialog, JFrame frame){
+        dialog.setSize(400, 300);
+        dialog.setLocationRelativeTo(frame);
+        dialog.setVisible(true);
+        dialog.pack();
+         // 设置关闭逻辑
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
     }
 }
