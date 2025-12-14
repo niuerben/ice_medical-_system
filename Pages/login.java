@@ -20,11 +20,10 @@ public class login{
         System.out.println("日志信息：登录面窗口打开\n");
 
         // 添加标签
-        JLabel label = new JLabel("请继续开发一下内容");
+        JLabel label = new JLabel("请继续开发以下内容");
         frame.getContentPane().add(label);
 
         frame.setVisible(true);
-        frame.pack();
 
         // 设置关闭逻辑
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -34,8 +33,16 @@ public class login{
         dialog.setSize(400, 300);
         dialog.setLocationRelativeTo(frame);
         dialog.setVisible(true);
-        dialog.pack();
-         // 设置关闭逻辑
+
+        // 创建按钮 
+        JButton bt1 = new JButton("登录");
+        JButton bt2 = new JButton("取消");
+        // 创建登录面版
+        JPanel panel = new JPanel();
+        panel.add(bt1);
+        panel.add(bt2);
+        dialog.add(panel);
+        // 设置关闭逻辑
         dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
     }
 }
