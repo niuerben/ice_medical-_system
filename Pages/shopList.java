@@ -3,35 +3,82 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.plaf.ColorUIResource;
 import javax.swing.plaf.DimensionUIResource;
 import javax.swing.plaf.FontUIResource;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+
 
 public class shopList {
     private DefaultTableModel tableModel;
     // 原始数据
-    private final Object[][] medicineData = {
-        // 抗生素类
-        {"001", "阿莫西林", "抗生素", "25.5", "100"},
-        {"002", "头孢克肟", "抗生素", "32.0", "80"},
-        {"003", "左氧氟沙星", "抗生素", "40.0", "60"},
-        {"004", "克拉霉素", "抗生素", "28.5", "90"},
-        // 维生素类
-        {"005", "维生素C", "维生素", "12.0", "200"},
-        {"006", "维生素B1", "维生素", "10.0", "180"},
-        {"007", "维生素D3", "维生素", "15.0", "160"},
-        {"008", "维生素E", "维生素", "20.0", "140"},
-        // 感冒药类
-        {"009", "感冒灵颗粒", "感冒药", "18.0", "150"},
-        {"010", "复方氨酚烷胺片", "感冒药", "22.0", "120"},
-        {"011", "小儿氨酚黄那敏颗粒", "感冒药", "16.0", "110"},
-        {"012", "板蓝根颗粒", "感冒药", "14.0", "130"},
-        // 心血管类
-        {"013", "阿司匹林", "心血管", "30.0", "80"},
-        {"014", "硝酸甘油", "心血管", "35.0", "70"},
-        {"015", "美托洛尔", "心血管", "38.0", "60"},
-        {"016", "氯吡格雷", "心血管", "45.0", "50"}
-    };
+    private Object[][] medicineData;
     private final String[] columnNames = {"ID", "药品名称", "类别", "价格", "库存"};
 
+    // 从JSON文件加载数据
+    private void loadData() {
+        List<Object[]> dataList = new ArrayList<>();
+        try {
+            File file = new File("data.json");
+            if (!file.exists()) {
+                System.err.println("数据文件不存在: " + file.getAbsolutePath());
+                medicineData = new Object[0][0];
+                return;
+            }
+
+            String content = new String(Files.readAllBytes(Paths.get("data.json")), "UTF-8");
+            content = content.trim();
+            
+            // 简单的JSON解析逻辑
+            if (content.startsWith("[") && content.endsWith("]")) {
+                content = content.substring(1, content.length() - 1);
+            }
+            
+            // 分割对象
+            String[] objects = content.split("(?<=\\}),\\s*");
+            
+            for (String obj : objects) {
+                // trim表示去掉前后空格
+                obj = obj.trim();
+                if (obj.startsWith("{")) obj = obj.substring(1);
+                if (obj.endsWith("}")) obj = obj.substring(0, obj.length() - 1);
+                
+                String[] pairs = obj.split(",");
+                String id = "", name = "", category = "", price = "", stock = "";
+                
+                for (String pair : pairs) {
+                    String[] kv = pair.split(":");
+                    if (kv.length == 2) {
+                        String key = kv[0].trim().replace("\"", "");
+                        String value = kv[1].trim().replace("\"", "");
+                        
+                        switch (key) {
+                            case "id": id = value; break;
+                            case "name": name = value; break;
+                            case "category": category = value; break;
+                            case "price": price = value; break;
+                            case "stock": stock = value; break;
+                        }
+                    }
+                }
+                // 只有当解析出有效数据时才添加
+                if (!id.isEmpty()) {
+                    dataList.add(new Object[]{id, name, category, price, stock});
+                }
+            }
+            
+            medicineData = dataList.toArray(new Object[0][]);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            medicineData = new Object[0][0];
+        }
+    }
+
+    // 创建购物面板
     public JPanel createShopPanel() {
+        loadData();
         JPanel panel = new JPanel();
         // 使用 BoxLayout 垂直布局
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
