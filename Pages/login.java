@@ -2,6 +2,12 @@ import javax.swing.*;
 // import javax.swing.plaf.basic.BasicInternalFrameTitlePane.MaximizeAction;
 public class login{
     public static void main(String[] args){
+        // 设置 Windows 风格
+        try {
+            UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         // 创建标题为"欢迎使用AscentSys应用"的窗口
         JFrame frame = new JFrame("欢迎使用AscentSys应用");
         init_frame(frame);
@@ -14,14 +20,14 @@ public class login{
 
     public static void init_frame(JFrame frame){
         // 设置窗口大小和关闭操作
-        frame.setSize(1600, 1200);
+        frame.setSize(1200, 900);
         frame.setLocation(400,300);
         // frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         System.out.println("日志信息：登录面窗口打开\n");
 
-        // 添加标签
-        JLabel label = new JLabel("请继续开发以下内容");
-        frame.getContentPane().add(label);
+        // 使用 shopList 类创建药品列表面板
+        shopList shop = new shopList();
+        frame.getContentPane().add(shop.createShopPanel());
 
         frame.setVisible(true);
 
