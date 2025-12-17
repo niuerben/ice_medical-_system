@@ -1,0 +1,14 @@
+# Java 编译文件
+*.class
+
+# 编译输出目录
+bin/
+
+# IDE 配置文件
+.idea/
+.vscode/
+*.iml
+
+# 临时文件
+*.log
+*.tmp
