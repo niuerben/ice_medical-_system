@@ -1,10 +1,11 @@
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.io.*;
+import java.nio.file.*;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.prefs.Preferences;
-import java.util.stream.Collectors;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
@@ -13,7 +14,7 @@ public class LoginFrame extends JFrame {
 
     private static final String PREF_NODE = "AscentSysLogin";
     private static final String PREF_USERNAME_KEY = "rememberedUsername";
-    private static final String PREF_CUSTOM_USERS_KEY = "customUsers";
+    private static final String USERS_JSON_FILE = "users.json";
 
     private final Preferences userPreferences = Preferences.userRoot().node(PREF_NODE);
 
@@ -74,7 +75,7 @@ public class LoginFrame extends JFrame {
         userCredentialStore.putAll(createDefaultCredentialStore());
 
         customCredentialStore.clear();
-        customCredentialStore.putAll(loadCustomUsersFromPreferences());
+        customCredentialStore.putAll(loadCustomUsersFromJSON());
 
         // 合并（自定义用户覆盖默认同名账号）
         userCredentialStore.putAll(customCredentialStore);
@@ -451,7 +452,7 @@ public class LoginFrame extends JFrame {
 
             customCredentialStore.put(normalizedUsername, password);
             userCredentialStore.put(normalizedUsername, password);
-            persistCustomUsers();
+            saveCustomUsersToJSON();
 
             Arrays.fill(passwordChars, '\0');
             Arrays.fill(confirmChars, '\0');
@@ -485,32 +486,72 @@ public class LoginFrame extends JFrame {
         }
     }
 
-    private void persistCustomUsers() {
-        if (customCredentialStore.isEmpty()) {
-            userPreferences.remove(PREF_CUSTOM_USERS_KEY);
-            return;
+    private void saveCustomUsersToJSON() {
+        try {
+            File file = new File(USERS_JSON_FILE);
+            StringBuilder json = new StringBuilder();
+            json.append("{\n");
+            json.append("  \"users\": [\n");
+            
+            int count = 0;
+            for (Map.Entry<String, String> entry : customCredentialStore.entrySet()) {
+                if (count > 0) json.append(",\n");
+                json.append("    {\n");
+                json.append("      \"username\": \"").append(entry.getKey()).append("\",\n");
+                json.append("      \"password\": \"").append(entry.getValue()).append("\"\n");
+                json.append("    }");
+                count++;
+            }
+            
+            json.append("\n  ]\n");
+            json.append("}\n");
+            
+            Files.write(file.toPath(), json.toString().getBytes("UTF-8"));
+        } catch (IOException e) {
+            System.err.println("保存用户数据失败: " + e.getMessage());
         }
-        String serialized = customCredentialStore.entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + entry.getValue())
-                .collect(Collectors.joining("|"));
-        userPreferences.put(PREF_CUSTOM_USERS_KEY, serialized);
     }
 
-    private Map<String, String> loadCustomUsersFromPreferences() {
+    private Map<String, String> loadCustomUsersFromJSON() {
         Map<String, String> customUsers = new LinkedHashMap<>();
-        String raw = userPreferences.get(PREF_CUSTOM_USERS_KEY, "");
-        if (raw.isEmpty()) return customUsers;
-
-        String[] entries = raw.split("\\|");
-        for (String entry : entries) {
-            if (entry == null || entry.trim().isEmpty() || !entry.contains("=")) continue;
-            String[] parts = entry.split("=", 2);
-            String username = parts[0].trim();
-            String password = parts.length > 1 ? parts[1] : "";
-            if (!username.isEmpty()) {
-                customUsers.put(username.toLowerCase(), password);
-            }
+        File file = new File(USERS_JSON_FILE);
+        
+        if (!file.exists()) {
+            return customUsers;
         }
+        
+        try {
+            String content = new String(Files.readAllBytes(file.toPath()), "UTF-8");
+            
+            // 简单的JSON解析(不依赖外部库)
+            String[] lines = content.split("\n");
+            String currentUsername = null;
+            
+            for (String line : lines) {
+                line = line.trim();
+                
+                if (line.contains("\"username\":")) {
+                    int start = line.indexOf(":") + 1;
+                    int firstQuote = line.indexOf("\"", start);
+                    int lastQuote = line.lastIndexOf("\"");
+                    if (firstQuote != -1 && lastQuote > firstQuote) {
+                        currentUsername = line.substring(firstQuote + 1, lastQuote);
+                    }
+                } else if (line.contains("\"password\":") && currentUsername != null) {
+                    int start = line.indexOf(":") + 1;
+                    int firstQuote = line.indexOf("\"", start);
+                    int lastQuote = line.lastIndexOf("\"");
+                    if (firstQuote != -1 && lastQuote > firstQuote) {
+                        String password = line.substring(firstQuote + 1, lastQuote);
+                        customUsers.put(currentUsername.toLowerCase(), password);
+                        currentUsername = null;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("读取用户数据失败: " + e.getMessage());
+        }
+        
         return customUsers;
     }
 
