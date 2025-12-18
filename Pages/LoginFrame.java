@@ -565,10 +565,9 @@ public class LoginFrame extends JFrame {
 
     private void openMainWindow(String username) {
         JFrame frame = new JFrame("欢迎使用AscentSys应用 - 当前用户: " + username);
-        frame.setSize(1200, 900);
+        frame.setSize(1100, 720);
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         frame.setResizable(true);
 
         shopList shop = new shopList();
