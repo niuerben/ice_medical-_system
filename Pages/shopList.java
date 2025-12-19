@@ -20,14 +20,14 @@ public class shopList {
     private void loadData() {
         List<Object[]> dataList = new ArrayList<>();
         try {
-            File file = new File("data.json");
+            File file = new File("storage/data.json");
             if (!file.exists()) {
                 System.err.println("数据文件不存在: " + file.getAbsolutePath());
                 medicineData = new Object[0][0];
                 return;
             }
 
-            String content = new String(Files.readAllBytes(Paths.get("data.json")), "UTF-8");
+            String content = new String(Files.readAllBytes(Paths.get("storage/data.json")), "UTF-8");
             content = content.trim();
             
             // 简单的JSON解析逻辑
