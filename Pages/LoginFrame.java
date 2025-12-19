@@ -319,7 +319,7 @@ public class LoginFrame extends JFrame {
         String normalized = username.toLowerCase();
         String storedPassword = userCredentialStore.get(normalized);
         String password = new String(passwordChars);
-
+        
         if (storedPassword == null || !storedPassword.equals(password)) {
             statusLabel.setText("账号或密码不正确，请重新输入。");
             JOptionPane.showMessageDialog(this, "账号或密码错误", "登录失败",

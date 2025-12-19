@@ -4,7 +4,7 @@ echo AscentSys 一键编译运行脚本
 echo ================================
 echo.
 echo [1/2] 正在编译...
-javac -encoding UTF-8 -d bin Pages\LoginFrame.java Pages\shopList.java
+javac -encoding UTF-8 -d bin Pages\LoginFrame.java Pages\shopList.java Pages\Cart.java
 if %ERRORLEVEL% NEQ 0 (
     echo.
     echo ✗ 编译失败！

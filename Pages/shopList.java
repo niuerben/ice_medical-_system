@@ -1,20 +1,24 @@
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
 import javax.swing.plaf.ColorUIResource;
 import javax.swing.plaf.DimensionUIResource;
 import javax.swing.plaf.FontUIResource;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class shopList {
     private DefaultTableModel tableModel;
     // 原始数据
     private Object[][] medicineData;
-    private final String[] columnNames = {"ID", "药品名称", "类别", "价格", "库存"};
+    private final String[] columnNames = {"ID", "药品名称", "类别", "价格", "库存", "操作"};
 
     // 从JSON文件加载数据
     private void loadData() {
@@ -64,7 +68,7 @@ public class shopList {
                 }
                 // 只有当解析出有效数据时才添加
                 if (!id.isEmpty()) {
-                    dataList.add(new Object[]{id, name, category, price, stock});
+                    dataList.add(new Object[]{id, name, category, price, stock, "购买"});
                 }
             }
             
@@ -123,7 +127,17 @@ public class shopList {
         JComboBox<String> categoryBox = createCategoryTable();
         categoryBox.setMaximumSize(new DimensionUIResource(150, 30)); 
         topPanel.add(categoryBox); 
+        
         topPanel.add(Box.createHorizontalGlue());
+
+        // 添加“查看购物车”按钮
+        JButton viewCartButton = new JButton("查看购物车");
+        viewCartButton.setFont(new FontUIResource("Microsoft YaHei", FontUIResource.PLAIN, 14));
+        viewCartButton.setBackground(new Color(0, 82, 217));
+        viewCartButton.setForeground(Color.WHITE);
+        viewCartButton.setFocusPainted(false);
+        viewCartButton.addActionListener(e -> showCart());
+        topPanel.add(viewCartButton);
 
         return topPanel;
     }
@@ -134,13 +148,19 @@ public class shopList {
         tableModel = new DefaultTableModel(medicineData, columnNames) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false;
+                // 只有“操作”列可编辑（为了让按钮响应点击）
+                return column == 5;
             }
         };
 
         // 创建表格并添加到滚动面板
         JTable table = new JTable(tableModel);
         beutifyTable(table);
+        
+        // 设置按钮渲染器和编辑器
+        table.getColumnModel().getColumn(5).setCellRenderer(new ButtonRenderer());
+        table.getColumnModel().getColumn(5).setCellEditor(new ButtonEditor(new JCheckBox(), table));
+
         JScrollPane scrollPane = new JScrollPane(table);
         beutifyScrollPane(scrollPane);
         return scrollPane;
@@ -196,5 +216,116 @@ public class shopList {
         scrollPane.getViewport().setBackground(new ColorUIResource(255, 255, 255)); 
         // 设置优美的边框粗细和圆角
         scrollPane.setBorder(new javax.swing.border.LineBorder(new ColorUIResource(220, 220, 220), 5, true));
+    }
+
+    // 显示购物车
+    private void showCart() {
+        Cart cart = Cart.getInstance();
+        List<Cart.CartItem> items = cart.getItems();
+        
+        if (items.isEmpty()) {
+            JOptionPane.showMessageDialog(null, "购物车是空的", "购物车", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        StringBuilder message = new StringBuilder("购物车内容:\n\n");
+        for (Cart.CartItem item : items) {
+            message.append(item.toString()).append("\n");
+        }
+        message.append("\n总价: ").append(String.format("%.2f", cart.getTotalPrice()));
+
+        // 这里可以使用更复杂的对话框，但为了简单起见，使用 MessageDialog
+        // 也可以添加清空购物车的选项
+        Object[] options = {"确定", "清空购物车"};
+        int choice = JOptionPane.showOptionDialog(null, message.toString(), "购物车",
+                JOptionPane.YES_NO_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
+        
+        if (choice == 1) { // 清空购物车
+            cart.clear();
+            JOptionPane.showMessageDialog(null, "购物车已清空");
+        }
+    }
+
+    // 按钮渲染器
+    class ButtonRenderer extends JButton implements TableCellRenderer {
+        public ButtonRenderer() {
+            setOpaque(true);
+            setBackground(new Color(0, 150, 0)); // 绿色按钮
+            setForeground(Color.WHITE);
+            setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
+        }
+
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                                                       boolean isSelected, boolean hasFocus, int row, int column) {
+            setText((value == null) ? "购买" : value.toString());
+            return this;
+        }
+    }
+
+    // 按钮编辑器
+    class ButtonEditor extends DefaultCellEditor {
+        protected JButton button;
+        private String label;
+        private boolean isPushed;
+        private JTable table;
+
+        public ButtonEditor(JCheckBox checkBox, JTable table) {
+            super(checkBox);
+            this.table = table;
+            button = new JButton();
+            button.setOpaque(true);
+            button.setBackground(new Color(0, 150, 0));
+            button.setForeground(Color.WHITE);
+            button.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
+            button.addActionListener(new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    fireEditingStopped();
+                }
+            });
+        }
+
+        public Component getTableCellEditorComponent(JTable table, Object value,
+                                                     boolean isSelected, int row, int column) {
+            label = (value == null) ? "购买" : value.toString();
+            button.setText(label);
+            isPushed = true;
+            return button;
+        }
+
+        public Object getCellEditorValue() {
+            if (isPushed) {
+                // 执行购买逻辑
+                int row = table.getSelectedRow();
+                // 注意：如果有排序或过滤，需要转换 row index。
+                // 这里暂时假设没有排序，直接使用 table.getValueAt
+                // 但因为我们用了 filtering in updateTableData which clears and re-adds rows, 
+                // the row index in model matches view if we use table.getValueAt directly on the view's data
+                
+                String id = (String) table.getValueAt(row, 0);
+                String name = (String) table.getValueAt(row, 1);
+                String priceStr = (String) table.getValueAt(row, 3);
+                double price = 0.0;
+                try {
+                    price = Double.parseDouble(priceStr);
+                } catch (NumberFormatException e) {
+                    e.printStackTrace();
+                }
+
+                // 添加到购物车
+                Cart.getInstance().addItem(id, name, price, 1);
+                JOptionPane.showMessageDialog(null, "已添加 " + name + " 到购物车");
+            }
+            isPushed = false;
+            return label;
+        }
+
+        public boolean stopCellEditing() {
+            isPushed = false;
+            return super.stopCellEditing();
+        }
+
+        protected void fireEditingStopped() {
+            super.fireEditingStopped();
+        }
     }
 }

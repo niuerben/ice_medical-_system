@@ -2,7 +2,7 @@
 echo ================================
 echo 正在编译项目...
 echo ================================
-javac -encoding UTF-8 -d bin Pages\LoginFrame.java Pages\shopList.java
+javac -encoding UTF-8 -d bin Pages\LoginFrame.java Pages\shopList.java Pages\Cart.java
 if %ERRORLEVEL% EQU 0 (
     echo.
     echo ✓ 编译成功！
