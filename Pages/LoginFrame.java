@@ -34,22 +34,6 @@ public class LoginFrame extends JFrame {
     private final Map<String, String> userCredentialStore = new LinkedHashMap<>();
     private final Map<String, String> customCredentialStore = new LinkedHashMap<>();
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            try {
-                // Windows 外观（如果不可用就用系统默认）
-                UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
-            } catch (Exception ignored) {
-                try {
-                    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-                } catch (Exception ignored2) {}
-            }
-
-            LoginFrame frame = new LoginFrame();
-            frame.setVisible(true);
-        });
-    }
-
     public LoginFrame() {
         configureFrame();
         initializeCredentialStore();
