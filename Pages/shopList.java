@@ -84,7 +84,7 @@ public class shopList {
     public JPanel createShopPanel() {
         loadData();
         JPanel panel = new JPanel();
-        panel.setSize(1200, 900);
+        panel.setSize(1100, 720);
         // 使用 BoxLayout 垂直布局
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         // 保持内边距和外边距 (32px)
