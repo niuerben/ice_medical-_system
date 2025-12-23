@@ -15,6 +15,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.net.*;
+import java.io.*;
 
 public class shopList {
     private DefaultTableModel tableModel;
@@ -29,14 +31,21 @@ public class shopList {
     private void loadData() {
         List<Object[]> dataList = new ArrayList<>();
         try {
-            File file = new File("storage/data.json");
-            if (!file.exists()) {
-                System.err.println("数据文件不存在: " + file.getAbsolutePath());
-                medicineData = new Object[0][0];
-                return;
+            // 连接到服务端获取数据 (假设服务端运行在本地 8888 端口)
+            Socket socket = new Socket(Constant.SERVER_IP, Constant.SERVER_PORT);
+            // 发送特殊请求标志以区分普通客户端请求
+            
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+            // stringbuilder 用于拼接多行数据
+            StringBuilder sb = new StringBuilder();
+            String line;
+            // 设置UTF-8 编码读取数据
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
             }
+            socket.close();
 
-            String content = new String(Files.readAllBytes(Paths.get("storage/data.json")), "UTF-8");
+            String content = sb.toString();
             content = content.trim();
 
             // 简单的JSON解析逻辑
