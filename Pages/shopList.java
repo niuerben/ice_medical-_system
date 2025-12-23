@@ -10,7 +10,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -110,7 +109,7 @@ public class shopList {
     public JPanel createShopPanel() {
         loadData();
         JPanel panel = new JPanel();
-        panel.setSize(1100, 720);
+        panel.setSize(Constant.STD_WINDOWS_WIDTH, Constant.STD_WINDOWS_HEIGHT);
         // 使用 BoxLayout 垂直布局
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         // 保持内边距和外边距 (32px)

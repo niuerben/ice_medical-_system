@@ -47,7 +47,7 @@ public class LoginFrame extends JFrame {
 
     private void configureFrame() {
         setTitle("AscentSys统一登录");
-        setSize(1100, 720);
+        setSize(Constant.STD_WINDOWS_WIDTH, Constant.STD_WINDOWS_HEIGHT);
         setLocationRelativeTo(null);
         setResizable(true);
         setMinimumSize(new Dimension(960, 620));
