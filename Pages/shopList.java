@@ -10,14 +10,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.net.*;
 import java.io.*;
 
-public class shopList {
+public class ShopList {
     private DefaultTableModel tableModel;
     // 原始数据
     private Object[][] medicineData;
@@ -32,8 +31,13 @@ public class shopList {
         try {
             // 连接到服务端获取数据 (假设服务端运行在本地 8888 端口)
             Socket socket = new Socket(Constant.SERVER_IP, Constant.SERVER_PORT);
-            // 发送特殊请求标志以区分普通客户端请求
             
+            // 发送int类型的请求选项id和String类型的请求信息message
+            DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+            dos.writeInt(3);
+            dos.writeUTF("获取商品列表");
+            dos.flush();
+
             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
             // stringbuilder 用于拼接多行数据
             StringBuilder sb = new StringBuilder();
