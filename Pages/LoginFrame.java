@@ -2,6 +2,8 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.*;
 import java.nio.file.*;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -11,6 +13,10 @@ import javax.swing.border.EmptyBorder;
 
 public class LoginFrame extends JFrame {
     private static final long serialVersionUID = 1L;
+
+    // 新增：统一窗口尺寸常量
+    private static final int WINDOW_WIDTH = 1120;
+    private static final int WINDOW_HEIGHT = 720;
 
     private static final String PREF_NODE = "AscentSysLogin";
     private static final String PREF_USERNAME_KEY = "rememberedUsername";
@@ -47,7 +53,8 @@ public class LoginFrame extends JFrame {
 
     private void configureFrame() {
         setTitle("AscentSys统一登录");
-        setSize(Constant.STD_WINDOWS_WIDTH, Constant.STD_WINDOWS_HEIGHT);
+        // 修改：使用常量设置大小
+        setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         setLocationRelativeTo(null);
         setResizable(true);
         setMinimumSize(new Dimension(960, 620));
@@ -60,6 +67,9 @@ public class LoginFrame extends JFrame {
 
         customCredentialStore.clear();
         customCredentialStore.putAll(loadCustomUsersFromJSON());
+
+        // 检查是否需要迁移现有明文密码
+        migratePlainTextPasswords();
 
         // 合并（自定义用户覆盖默认同名账号）
         userCredentialStore.putAll(customCredentialStore);
@@ -301,10 +311,14 @@ public class LoginFrame extends JFrame {
         }
 
         String normalized = username.toLowerCase();
-        String storedPassword = userCredentialStore.get(normalized);
+        String storedPasswordHash = userCredentialStore.get(normalized);
+
+        // 输入密码 -> hash
         String password = new String(passwordChars);
-        
-        if (storedPassword == null || !storedPassword.equals(password)) {
+        String inputPasswordHash = hashPassword(password);
+
+        // 修复：变量名 + 使用哈希比对
+        if (storedPasswordHash == null || !storedPasswordHash.equalsIgnoreCase(inputPasswordHash)) {
             statusLabel.setText("账号或密码不正确，请重新输入。");
             JOptionPane.showMessageDialog(this, "账号或密码错误", "登录失败",
                     JOptionPane.ERROR_MESSAGE);
@@ -434,8 +448,9 @@ public class LoginFrame extends JFrame {
                 return;
             }
 
-            customCredentialStore.put(normalizedUsername, password);
-            userCredentialStore.put(normalizedUsername, password);
+            String passwordHash = hashPassword(password);
+            customCredentialStore.put(normalizedUsername, passwordHash);
+            userCredentialStore.put(normalizedUsername, passwordHash);
             saveCustomUsersToJSON();
 
             Arrays.fill(passwordChars, '\0');
@@ -482,7 +497,7 @@ public class LoginFrame extends JFrame {
                 if (count > 0) json.append(",\n");
                 json.append("    {\n");
                 json.append("      \"username\": \"").append(entry.getKey()).append("\",\n");
-                json.append("      \"password\": \"").append(entry.getValue()).append("\"\n");
+                json.append("      \"passwordHash\": \"").append(entry.getValue()).append("\"\n");
                 json.append("    }");
                 count++;
             }
@@ -521,7 +536,7 @@ public class LoginFrame extends JFrame {
                     if (firstQuote != -1 && lastQuote > firstQuote) {
                         currentUsername = line.substring(firstQuote + 1, lastQuote);
                     }
-                } else if (line.contains("\"password\":") && currentUsername != null) {
+                } else if ((line.contains("\"password\":") || line.contains("\"passwordHash\":")) && currentUsername != null) {
                     int start = line.indexOf(":") + 1;
                     int firstQuote = line.indexOf("\"", start);
                     int lastQuote = line.lastIndexOf("\"");
@@ -541,15 +556,16 @@ public class LoginFrame extends JFrame {
 
     private Map<String, String> createDefaultCredentialStore() {
         Map<String, String> store = new LinkedHashMap<>();
-        store.put("admin", "admin123");
-        store.put("pharmacist", "med2024");
-        store.put("auditor", "check789");
+        store.put("admin", hashPassword("admin123"));
+        store.put("pharmacist", hashPassword("med2024"));
+        store.put("auditor", hashPassword("check789"));
         return store;
     }
 
     private void openMainWindow(String username) {
         JFrame frame = new JFrame("欢迎使用AscentSys应用 - 当前用户: " + username);
-        frame.setSize(1100, 720);
+        // 修改：使用常量设置大小
+        frame.setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         frame.setLocationRelativeTo(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setResizable(true);
@@ -558,6 +574,81 @@ public class LoginFrame extends JFrame {
         frame.getContentPane().add(shop.createShopPanel(), BorderLayout.CENTER);
 
         frame.setVisible(true);
+    }
+
+    /**
+     * 使用SHA-256算法对密码进行哈希加密
+     * @param password 原始密码
+     * @return 哈希后的密码
+     */
+    private String hashPassword(String password) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashBytes = digest.digest(password.getBytes("UTF-8"));
+            
+            // 将字节数组转换为十六进制字符串
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hashBytes) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
+            System.err.println("密码哈希失败: " + e.getMessage());
+            return password; // 如果哈希失败，返回原始密码
+        }
+    }
+
+    /**
+     * 判断密码是否已经是哈希值
+     * SHA-256哈希值长度为64个字符，且只包含十六进制字符
+     */
+    private boolean isHashedPassword(String password) {
+        if (password == null || password.length() != 64) {
+            return false;
+        }
+        return password.matches("^[a-fA-F0-9]{64}$");
+    }
+
+    /**
+     * 迁移明文密码为哈希密码
+     */
+    private void migratePlainTextPasswords() {
+        boolean needsMigration = false;
+        
+        // 检查自定义用户中是否有明文密码
+        for (Map.Entry<String, String> entry : customCredentialStore.entrySet()) {
+            if (!isHashedPassword(entry.getValue())) {
+                needsMigration = true;
+                break;
+            }
+        }
+        
+        if (needsMigration) {
+            System.out.println("检测到明文密码，正在迁移为哈希密码...");
+            Map<String, String> migratedUsers = new LinkedHashMap<>();
+            
+            for (Map.Entry<String, String> entry : customCredentialStore.entrySet()) {
+                String username = entry.getKey();
+                String password = entry.getValue();
+                
+                if (isHashedPassword(password)) {
+                    migratedUsers.put(username, password);
+                } else {
+                    String hashedPassword = hashPassword(password);
+                    migratedUsers.put(username, hashedPassword);
+                    System.out.println("已迁移用户: " + username);
+                }
+            }
+            
+            customCredentialStore.clear();
+            customCredentialStore.putAll(migratedUsers);
+            saveCustomUsersToJSON();
+            System.out.println("密码迁移完成，已保存为哈希格式。");
+        }
     }
 
     private static class GradientPanel extends JPanel {
