@@ -646,16 +646,23 @@ public class LoginFrame extends JFrame {
 
                     // 创建滚动面板
                     JScrollPane scrollPane = new JScrollPane(textArea);
-                    scrollPane.setPreferredSize(new Dimension(200, 80));
+                    scrollPane.setPreferredSize(new Dimension(200, 100));
                     scrollPane.setBorder(BorderFactory.createEmptyBorder());
+                    // 设置滚动条策略，确保需要时显示
+                    scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+                    scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+                    // 设置滚动面板的背景色
+                    scrollPane.getViewport().setBackground(textArea.getBackground());
 
                     // 设置选中状态的背景色
                     if (isSelected) {
                         textArea.setBackground(new Color(51, 153, 255));
                         textArea.setForeground(Color.WHITE);
+                        scrollPane.getViewport().setBackground(new Color(51, 153, 255));
                     } else {
                         textArea.setBackground(Color.WHITE);
                         textArea.setForeground(Color.BLACK);
+                        scrollPane.getViewport().setBackground(Color.WHITE);
                     }
 
                     return scrollPane;
@@ -666,7 +673,7 @@ public class LoginFrame extends JFrame {
 
         // 美化表格
         table.setFont(new Font("Microsoft YaHei", Font.PLAIN, 14));
-        table.setRowHeight(80); // 增加行高以容纳滚动面板
+        table.setRowHeight(100); // 增加行高以容纳滚动面板
         javax.swing.table.DefaultTableCellRenderer headerRenderer = new javax.swing.table.DefaultTableCellRenderer();
         headerRenderer.setBackground(new Color(0, 82, 217));
         headerRenderer.setForeground(Color.WHITE);

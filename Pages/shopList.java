@@ -18,6 +18,7 @@ import java.io.*;
 
 public class ShopList {
     private DefaultTableModel tableModel;
+    private JTable table; // 表格对象，改为成员变量以便在其他方法中访问
     // 原始数据
     private Object[][] medicineData;
     private final String[] columnNames = { "ID", "药品名称", "类别", "价格", "库存", "操作" };
@@ -193,22 +194,22 @@ public class ShopList {
         };
 
         // 创建表格并添加到滚动面板
-        JTable table = new JTable(tableModel);
-        beutifyTable(table);
+        this.table = new JTable(tableModel);
+        beutifyTable(this.table);
 
         // 设置新的渲染器和编辑器：显示 - [数量] +
-        table.getColumnModel().getColumn(5).setCellRenderer(new QuantityCellRenderer());
-        table.getColumnModel().getColumn(5).setCellEditor(new QuantityCellEditor(table));
+        this.table.getColumnModel().getColumn(5).setCellRenderer(new QuantityCellRenderer());
+        this.table.getColumnModel().getColumn(5).setCellEditor(new QuantityCellEditor(this.table));
 
         // 设置列宽
-        table.getColumnModel().getColumn(0).setPreferredWidth(60); // ID列宽度缩小
-        table.getColumnModel().getColumn(2).setPreferredWidth(80); // 类别列宽度缩小
-        table.getColumnModel().getColumn(3).setPreferredWidth(80); // 价格列宽度缩小
-        table.getColumnModel().getColumn(1).setPreferredWidth(200); // 药品名称列宽度增加
-        table.getColumnModel().getColumn(4).setPreferredWidth(80); // 库存列宽度
-        table.getColumnModel().getColumn(5).setPreferredWidth(200); // 操作列宽度
+        this.table.getColumnModel().getColumn(0).setPreferredWidth(60); // ID列宽度缩小
+        this.table.getColumnModel().getColumn(2).setPreferredWidth(80); // 类别列宽度缩小
+        this.table.getColumnModel().getColumn(3).setPreferredWidth(80); // 价格列宽度缩小
+        this.table.getColumnModel().getColumn(1).setPreferredWidth(200); // 药品名称列宽度增加
+        this.table.getColumnModel().getColumn(4).setPreferredWidth(80); // 库存列宽度
+        this.table.getColumnModel().getColumn(5).setPreferredWidth(200); // 操作列宽度
 
-        JScrollPane scrollPane = new JScrollPane(table);
+        JScrollPane scrollPane = new JScrollPane(this.table);
         beutifyScrollPane(scrollPane);
         return scrollPane;
     }
@@ -285,8 +286,13 @@ public class ShopList {
                 JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
 
         if (choice == 1) { // 清空购物车
+            // 确保所有单元格编辑已停止
+            if (table.isEditing()) {
+                table.getCellEditor().stopCellEditing();
+            }
             cart.clear();
             updateTotalLabel();
+            tableModel.fireTableDataChanged(); // 刷新表格数据，使操作列数量立即变为0
             JOptionPane.showMessageDialog(null, "购物车已清空");
         } else if (choice == 0) { // 下单流程：选择支付方式
             Object[] payOptions = { "微信付款", "支付宝付款", "取消" };
@@ -316,9 +322,14 @@ public class ShopList {
                 double totalPrice = cart.getTotalPrice();
                 OrderHistory.getInstance().createOrder(orderItems, totalPrice);
 
+                // 确保所有单元格编辑已停止
+                if (table.isEditing()) {
+                    table.getCellEditor().stopCellEditing();
+                }
                 // 清空购物车
                 cart.clear();
                 updateTotalLabel();
+                tableModel.fireTableDataChanged(); // 刷新表格数据，使操作列数量立即变为0
 
                 // 显示支付成功信息
                 if (payChoice == 0) {
