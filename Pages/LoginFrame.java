@@ -1,10 +1,13 @@
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.*;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.List;
 import java.util.prefs.Preferences;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
 
 public class LoginFrame extends JFrame {
     private static final long serialVersionUID = 1L;
@@ -115,8 +118,7 @@ public class LoginFrame extends JFrame {
         usernameField.setColumns(20);
         usernameField.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(55, 65, 81), 2, true),
-                BorderFactory.createEmptyBorder(12, 12, 12, 12)
-        ));
+                BorderFactory.createEmptyBorder(12, 12, 12, 12)));
         gbc.gridy = 3;
         formPanel.add(usernameField, gbc);
 
@@ -128,8 +130,7 @@ public class LoginFrame extends JFrame {
         passwordField.setFont(new Font("Microsoft YaHei", Font.PLAIN, 16));
         passwordField.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(55, 65, 81), 2, true),
-                BorderFactory.createEmptyBorder(12, 12, 12, 12)
-        ));
+                BorderFactory.createEmptyBorder(12, 12, 12, 12)));
         gbc.gridy = 5;
         formPanel.add(passwordField, gbc);
 
@@ -203,8 +204,7 @@ public class LoginFrame extends JFrame {
         button.setPreferredSize(new Dimension(140, 48));
         button.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(156, 163, 175), 2, true),
-                BorderFactory.createEmptyBorder(12, 16, 12, 16)
-        ));
+                BorderFactory.createEmptyBorder(12, 16, 12, 16)));
     }
 
     private void styleSuccessButton(JButton button) {
@@ -216,8 +216,7 @@ public class LoginFrame extends JFrame {
         button.setPreferredSize(new Dimension(140, 48));
         button.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(156, 163, 175), 2, true),
-                BorderFactory.createEmptyBorder(12, 16, 12, 16)
-        ));
+                BorderFactory.createEmptyBorder(12, 16, 12, 16)));
     }
 
     private void styleSecondaryButton(JButton button) {
@@ -229,8 +228,7 @@ public class LoginFrame extends JFrame {
         button.setPreferredSize(new Dimension(140, 48));
         button.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(156, 163, 175), 2, true),
-                BorderFactory.createEmptyBorder(12, 16, 12, 16)
-        ));
+                BorderFactory.createEmptyBorder(12, 16, 12, 16)));
     }
 
     private void styleDangerButton(JButton button) {
@@ -242,8 +240,7 @@ public class LoginFrame extends JFrame {
         button.setPreferredSize(new Dimension(140, 48));
         button.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(156, 163, 175), 2, true),
-                BorderFactory.createEmptyBorder(12, 16, 12, 16)
-        ));
+                BorderFactory.createEmptyBorder(12, 16, 12, 16)));
     }
 
     private void installActions() {
@@ -340,7 +337,7 @@ public class LoginFrame extends JFrame {
         headerLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 20));
         gbc.gridy = 0;
         contentPanel.add(headerLabel, gbc);
-        
+
         JLabel tipLabel = new JLabel("<html>密码要求:长度≥6位,必须包含字母和数字</html>", SwingConstants.LEFT);
         tipLabel.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
         tipLabel.setForeground(new Color(107, 114, 128));
@@ -400,7 +397,7 @@ public class LoginFrame extends JFrame {
 
             String password = new String(passwordChars);
             String confirmPassword = new String(confirmChars);
-            
+
             // 密码强度验证:长度≥6,必须包含字母和数字
             if (password.length() < 6) {
                 JOptionPane.showMessageDialog(dialog, "密码长度必须至少为6位", "密码强度不足",
@@ -409,20 +406,20 @@ public class LoginFrame extends JFrame {
                 Arrays.fill(confirmChars, '\0');
                 return;
             }
-            
+
             boolean hasLetter = password.matches(".*[a-zA-Z].*");
             boolean hasDigit = password.matches(".*\\d.*");
-            
+
             if (!hasLetter || !hasDigit) {
-                JOptionPane.showMessageDialog(dialog, 
-                        "密码必须同时包含字母和数字\n当前密码强度不足,请重新设置", 
-                        "密码强度不足",          //  ;.;.' ;'. ;vbl;'bc;lvl; '
+                JOptionPane.showMessageDialog(dialog,
+                        "密码必须同时包含字母和数字\n当前密码强度不足,请重新设置",
+                        "密码强度不足", // ;.;.' ;'. ;vbl;'bc;lvl; '
                         JOptionPane.WARNING_MESSAGE);
                 Arrays.fill(passwordChars, '\0');
                 Arrays.fill(confirmChars, '\0');
                 return;
             }
-            
+
             if (!password.equals(confirmPassword)) {
                 JOptionPane.showMessageDialog(dialog, "两次输入的密码不一致", "注册提示",
                         JOptionPane.WARNING_MESSAGE);
@@ -494,10 +491,204 @@ public class LoginFrame extends JFrame {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setResizable(true);
 
-        ShopList shop = new ShopList();
-        frame.getContentPane().add(shop.createShopPanel(), BorderLayout.CENTER);
+        // 创建主面板，使用BorderLayout
+        JPanel mainPanel = new JPanel(new BorderLayout());
 
+        // 创建内容面板，用于显示主内容
+        JPanel contentPanel = new JPanel(new BorderLayout());
+
+        // 创建药品列表面板
+        ShopList shop = new ShopList();
+        JPanel shopPanel = shop.createShopPanel();
+        contentPanel.add(shopPanel, BorderLayout.CENTER);
+
+        // 创建侧边栏
+        JPanel sidebar = createSidebar(contentPanel, shop);
+        mainPanel.add(sidebar, BorderLayout.WEST);
+        mainPanel.add(contentPanel, BorderLayout.CENTER);
+
+        frame.getContentPane().add(mainPanel, BorderLayout.CENTER);
         frame.setVisible(true);
+    }
+
+    // 创建侧边栏组件
+    private JPanel createSidebar(JPanel contentPanel, ShopList shop) {
+        // 使用与登录面板相同的渐变背景
+        GradientPanel sidebar = new GradientPanel();
+        sidebar.setPreferredSize(new Dimension(250, Constant.STD_WINDOWS_HEIGHT));
+        sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
+        sidebar.setBorder(BorderFactory.createEmptyBorder(32, 16, 32, 16));
+
+        // 欢迎标题
+        JLabel welcomeLabel = new JLabel("欢迎使用AscentSys系统");
+        welcomeLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 18));
+        welcomeLabel.setForeground(Color.WHITE); // 白色文字，在深蓝色背景上可见
+        welcomeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        welcomeLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 32, 0));
+        sidebar.add(welcomeLabel);
+
+        // 药物列表按钮
+        JButton medicineListButton = new JButton("药物列表");
+        medicineListButton.setFont(new Font("Microsoft YaHei", Font.PLAIN, 16));
+        medicineListButton.setPreferredSize(new Dimension(200, 40));
+        medicineListButton.setMaximumSize(new Dimension(200, 40));
+        medicineListButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        medicineListButton.setBackground(new Color(255, 255, 255)); // 白色背景
+        medicineListButton.setForeground(Color.BLACK); // 黑色文字
+        medicineListButton.setFocusPainted(false);
+        medicineListButton.setBorder(BorderFactory.createLineBorder(new Color(156, 163, 175), 2, true));
+        medicineListButton.addActionListener(e -> {
+            // 切换到药物列表界面
+            contentPanel.removeAll();
+            contentPanel.add(shop.createShopPanel(), BorderLayout.CENTER);
+            contentPanel.revalidate();
+            contentPanel.repaint();
+        });
+        sidebar.add(medicineListButton);
+        sidebar.add(Box.createVerticalStrut(16));
+
+        // 我的订单按钮
+        JButton orderHistoryButton = new JButton("我的订单");
+        orderHistoryButton.setFont(new Font("Microsoft YaHei", Font.PLAIN, 16));
+        orderHistoryButton.setPreferredSize(new Dimension(200, 40));
+        orderHistoryButton.setMaximumSize(new Dimension(200, 40));
+        orderHistoryButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        orderHistoryButton.setBackground(new Color(255, 255, 255)); // 白色背景
+        orderHistoryButton.setForeground(Color.BLACK); // 黑色文字
+        orderHistoryButton.setFocusPainted(false);
+        orderHistoryButton.setBorder(BorderFactory.createLineBorder(new Color(156, 163, 175), 2, true));
+        orderHistoryButton.addActionListener(e -> {
+            // 切换到购买历史界面
+            contentPanel.removeAll();
+            contentPanel.add(createOrderHistoryPanel(), BorderLayout.CENTER);
+            contentPanel.revalidate();
+            contentPanel.repaint();
+        });
+        sidebar.add(orderHistoryButton);
+
+        return sidebar;
+    }
+
+    // 创建购买历史表格界面
+    private JPanel createOrderHistoryPanel() {
+        JPanel panel = new JPanel();
+        panel.setSize(Constant.STD_WINDOWS_WIDTH - 250, Constant.STD_WINDOWS_HEIGHT);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createEmptyBorder(32, 32, 32, 32));
+
+        // 创建标题
+        JLabel titleLabel = new JLabel("我的订单");
+        titleLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 24));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 24, 0));
+        panel.add(titleLabel);
+
+        // 获取订单历史数据
+        List<OrderHistory.Order> orders = OrderHistory.getInstance().getOrders();
+
+        // 如果没有订单
+        if (orders.isEmpty()) {
+            JLabel noOrderLabel = new JLabel("暂无购买记录");
+            noOrderLabel.setFont(new Font("Microsoft YaHei", Font.PLAIN, 16));
+            noOrderLabel.setForeground(new Color(107, 114, 128));
+            noOrderLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            panel.add(noOrderLabel);
+            return panel;
+        }
+
+        // 创建表格数据
+        Object[][] tableData = new Object[orders.size()][5];
+        // 创建SimpleDateFormat对象，使用：分隔所有时间单位
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy:MM:dd:HH:mm:ss");
+        for (int i = 0; i < orders.size(); i++) {
+            OrderHistory.Order order = orders.get(i);
+            tableData[i][0] = order.getOrderId();
+            tableData[i][1] = sdf.format(order.getOrderDate());
+            tableData[i][2] = order; // 将Order对象存入表格，用于自定义渲染
+            tableData[i][3] = "¥" + String.format("%.2f", order.getTotalPrice());
+            tableData[i][4] = order.getStatus();
+        }
+
+        // 列名
+        String[] columnNames = { "订单ID", "下单时间", "购买商品", "总价", "状态" };
+
+        // 创建表格模型
+        DefaultTableModel tableModel = new DefaultTableModel(tableData, columnNames) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        // 创建表格
+        JTable table = new JTable(tableModel);
+
+        // 创建自定义的商品列表渲染器
+        javax.swing.table.TableCellRenderer itemListRenderer = new javax.swing.table.DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                    boolean hasFocus, int row, int column) {
+                // 如果value是Order对象，生成商品列表
+                if (value instanceof OrderHistory.Order) {
+                    OrderHistory.Order order = (OrderHistory.Order) value;
+                    // 创建文本区域显示商品列表
+                    JTextArea textArea = new JTextArea();
+                    textArea.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
+                    textArea.setEditable(false);
+                    textArea.setLineWrap(true);
+                    textArea.setWrapStyleWord(true);
+
+                    // 生成商品列表文本
+                    StringBuilder sb = new StringBuilder();
+                    for (OrderHistory.OrderItem item : order.getItems()) {
+                        sb.append(item.getName()).append(" - ").append(item.getQuantity()).append("个\n");
+                    }
+                    textArea.setText(sb.toString());
+
+                    // 创建滚动面板
+                    JScrollPane scrollPane = new JScrollPane(textArea);
+                    scrollPane.setPreferredSize(new Dimension(200, 80));
+                    scrollPane.setBorder(BorderFactory.createEmptyBorder());
+
+                    // 设置选中状态的背景色
+                    if (isSelected) {
+                        textArea.setBackground(new Color(51, 153, 255));
+                        textArea.setForeground(Color.WHITE);
+                    } else {
+                        textArea.setBackground(Color.WHITE);
+                        textArea.setForeground(Color.BLACK);
+                    }
+
+                    return scrollPane;
+                }
+                return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            }
+        };
+
+        // 美化表格
+        table.setFont(new Font("Microsoft YaHei", Font.PLAIN, 14));
+        table.setRowHeight(80); // 增加行高以容纳滚动面板
+        javax.swing.table.DefaultTableCellRenderer headerRenderer = new javax.swing.table.DefaultTableCellRenderer();
+        headerRenderer.setBackground(new Color(0, 82, 217));
+        headerRenderer.setForeground(Color.WHITE);
+        headerRenderer.setFont(new Font("Microsoft YaHei", Font.BOLD, 14));
+        table.getTableHeader().setDefaultRenderer(headerRenderer);
+        table.setSelectionBackground(new Color(51, 153, 255));
+        table.setSelectionForeground(Color.WHITE);
+        table.setGridColor(new Color(220, 220, 220));
+        table.setShowVerticalLines(true);
+        table.setShowHorizontalLines(true);
+        table.setFillsViewportHeight(true);
+
+        // 设置"购买商品"列的渲染器
+        table.getColumnModel().getColumn(2).setCellRenderer(itemListRenderer);
+
+        // 创建滚动面板
+        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane.getViewport().setBackground(Color.WHITE);
+        scrollPane.setBorder(new javax.swing.border.LineBorder(new Color(220, 220, 220), 5, true));
+
+        panel.add(scrollPane);
+        return panel;
     }
 
     private static class GradientPanel extends JPanel {
@@ -509,8 +700,7 @@ public class LoginFrame extends JFrame {
             Graphics2D g2 = (Graphics2D) graphics;
             GradientPaint paint = new GradientPaint(
                     0, 0, new Color(24, 90, 219),
-                    getWidth(), getHeight(), new Color(58, 132, 247)
-            );
+                    getWidth(), getHeight(), new Color(58, 132, 247));
             g2.setPaint(paint);
             g2.fillRect(0, 0, getWidth(), getHeight());
         }

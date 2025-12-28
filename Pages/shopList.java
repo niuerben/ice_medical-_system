@@ -31,7 +31,7 @@ public class ShopList {
         try {
             // 连接到服务端获取数据 (假设服务端运行在本地 8888 端口)
             Socket socket = new Socket(Constant.SERVER_IP, Constant.SERVER_PORT);
-            
+
             // 发送int类型的请求选项id和String类型的请求信息message
             DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
             dos.writeInt(3);
@@ -200,6 +200,14 @@ public class ShopList {
         table.getColumnModel().getColumn(5).setCellRenderer(new QuantityCellRenderer());
         table.getColumnModel().getColumn(5).setCellEditor(new QuantityCellEditor(table));
 
+        // 设置列宽
+        table.getColumnModel().getColumn(0).setPreferredWidth(60); // ID列宽度缩小
+        table.getColumnModel().getColumn(2).setPreferredWidth(80); // 类别列宽度缩小
+        table.getColumnModel().getColumn(3).setPreferredWidth(80); // 价格列宽度缩小
+        table.getColumnModel().getColumn(1).setPreferredWidth(200); // 药品名称列宽度增加
+        table.getColumnModel().getColumn(4).setPreferredWidth(80); // 库存列宽度
+        table.getColumnModel().getColumn(5).setPreferredWidth(200); // 操作列宽度
+
         JScrollPane scrollPane = new JScrollPane(table);
         beutifyScrollPane(scrollPane);
         return scrollPane;
@@ -284,10 +292,40 @@ public class ShopList {
             Object[] payOptions = { "微信付款", "支付宝付款", "取消" };
             int payChoice = JOptionPane.showOptionDialog(null, "请选择支付方式", "支付",
                     JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, payOptions, payOptions[0]);
-            if (payChoice == 0) {
-                JOptionPane.showMessageDialog(null, "选择了微信付款（演示）");
-            } else if (payChoice == 1) {
-                JOptionPane.showMessageDialog(null, "选择了支付宝付款（演示）");
+            if (payChoice == 0 || payChoice == 1) {
+                // 创建订单历史记录
+                List<OrderHistory.OrderItem> orderItems = new ArrayList<>();
+                for (Cart.CartItem item : cart.getItems()) {
+                    // 查找商品类别
+                    String category = "";
+                    for (Object[] row : medicineData) {
+                        if (item.getId().equals(row[0])) {
+                            category = (String) row[2];
+                            break;
+                        }
+                    }
+                    orderItems.add(new OrderHistory.OrderItem(
+                            item.getId(),
+                            item.getName(),
+                            category,
+                            item.getPrice(),
+                            item.getQuantity()));
+                }
+
+                // 创建订单
+                double totalPrice = cart.getTotalPrice();
+                OrderHistory.getInstance().createOrder(orderItems, totalPrice);
+
+                // 清空购物车
+                cart.clear();
+                updateTotalLabel();
+
+                // 显示支付成功信息
+                if (payChoice == 0) {
+                    JOptionPane.showMessageDialog(null, "微信付款成功，订单已生成！");
+                } else if (payChoice == 1) {
+                    JOptionPane.showMessageDialog(null, "支付宝付款成功，订单已生成！");
+                }
             }
         }
     }
