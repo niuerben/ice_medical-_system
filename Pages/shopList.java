@@ -21,10 +21,16 @@ public class ShopList {
     private JTable table; // 表格对象，改为成员变量以便在其他方法中访问
     // 原始数据
     private Object[][] medicineData;
+    private Object[][] ordersData;
+    private DefaultTableModel ordersTableModel;
     private final String[] columnNames = { "ID", "药品名称", "类别", "价格", "库存", "操作" };
+    private final String[] orderColumnNames = { "订单ID", "药品", "下单时间", "状态" };
 
     // 顶部显示总价的标签（在 createTopPanel 中初始化）
     private JLabel totalPriceLabel;
+    
+    // 当前用户名（假设为test）
+    private String currentUser = "test";
 
     // 从JSON文件加载数据
     private void loadData() {
@@ -320,7 +326,10 @@ public class ShopList {
 
                 // 创建订单
                 double totalPrice = cart.getTotalPrice();
-                OrderHistory.getInstance().createOrder(orderItems, totalPrice);
+                OrderHistory.Order order = OrderHistory.getInstance().createOrder(orderItems, totalPrice);
+
+                // 将订单发送到服务器保存
+                boolean saveSuccess = saveOrderToServer(order);
 
                 // 确保所有单元格编辑已停止
                 if (table.isEditing()) {
@@ -333,9 +342,17 @@ public class ShopList {
 
                 // 显示支付成功信息
                 if (payChoice == 0) {
-                    JOptionPane.showMessageDialog(null, "微信付款成功，订单已生成！");
+                    if (saveSuccess) {
+                        JOptionPane.showMessageDialog(null, "微信付款成功，订单已保存！");
+                    } else {
+                        JOptionPane.showMessageDialog(null, "微信付款成功，但订单保存到服务器失败", "警告", JOptionPane.WARNING_MESSAGE);
+                    }
                 } else if (payChoice == 1) {
-                    JOptionPane.showMessageDialog(null, "支付宝付款成功，订单已生成！");
+                    if (saveSuccess) {
+                        JOptionPane.showMessageDialog(null, "支付宝付款成功，订单已保存！");
+                    } else {
+                        JOptionPane.showMessageDialog(null, "支付宝付款成功，但订单保存到服务器失败", "警告", JOptionPane.WARNING_MESSAGE);
+                    }
                 }
             }
         }
@@ -613,5 +630,139 @@ public class ShopList {
             return;
         Cart cart = Cart.getInstance();
         totalPriceLabel.setText("总价: " + String.format("%.2f", cart.getTotalPrice()) + "元");
+    }
+
+    // 保存订单到服务器
+    private boolean saveOrderToServer(OrderHistory.Order order) {
+        try {
+            Socket socket = new Socket(Constant.SERVER_IP, Constant.SERVER_PORT);
+            DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+            dos.writeInt(4); // 输入订单数据的类型
+
+            // 构建订单JSON
+            StringBuilder orderJson = new StringBuilder();
+            orderJson.append("    {\n");
+            orderJson.append("      \"orderId\": \"").append(order.getOrderId()).append("\",\n");
+            orderJson.append("      \"username\": \"").append(currentUser).append("\",\n");
+            orderJson.append("      \"orderDate\": \"").append(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(order.getOrderDate())).append("\",\n");
+            orderJson.append("      \"totalPrice\": \"").append(String.format("%.2f", order.getTotalPrice())).append("\",\n");
+            orderJson.append("      \"status\": \"").append(order.getStatus()).append("\",\n");
+            orderJson.append("      \"items\": [\n");
+            
+            List<OrderHistory.OrderItem> items = order.getItems();
+            for (int i = 0; i < items.size(); i++) {
+                OrderHistory.OrderItem item = items.get(i);
+                orderJson.append("        {\n");
+                orderJson.append("          \"id\": \"").append(item.getId()).append("\",\n");
+                orderJson.append("          \"name\": \"").append(item.getName()).append("\",\n");
+                orderJson.append("          \"category\": \"").append(item.getCategory()).append("\",\n");
+                orderJson.append("          \"price\": \"").append(String.format("%.2f", item.getPrice())).append("\",\n");
+                orderJson.append("          \"quantity\": ").append(item.getQuantity()).append("\n");
+                orderJson.append("        }");
+                if (i < items.size() - 1) {
+                    orderJson.append(",");
+                }
+                orderJson.append("\n");
+            }
+            orderJson.append("      ]\n");
+            orderJson.append("    }");
+
+            dos.writeUTF(orderJson.toString());
+            dos.flush();
+
+            DataInputStream dis = new DataInputStream(socket.getInputStream());
+            boolean result = dis.readBoolean();
+            socket.close();
+            return result;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // 从服务器加载订单数据
+    private void loadOrdersFromServer() {
+        try {
+            Socket socket = new Socket(Constant.SERVER_IP, Constant.SERVER_PORT);
+            DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+            dos.writeInt(5); // 获取订单数据的类型
+            dos.writeUTF(currentUser);
+            dos.flush();
+
+            DataInputStream dis = new DataInputStream(socket.getInputStream());
+            boolean exists = dis.readBoolean();
+            
+            if (exists) {
+                // 读取并跳过换行符
+                dis.readByte();
+                
+                BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    sb.append(line);
+                }
+                
+                String content = sb.toString().trim();
+                // 解析订单JSON并更新ordersData
+                parseOrdersFromJson(content);
+            }
+            
+            socket.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // 解析订单JSON数据
+    private void parseOrdersFromJson(String jsonContent) {
+        try {
+            if (!jsonContent.startsWith("[") || !jsonContent.endsWith("]")) {
+                return;
+            }
+            
+            String content = jsonContent.substring(1, jsonContent.length() - 1).trim();
+            if (content.isEmpty()) {
+                return;
+            }
+            
+            String[] orders = content.split("(?<=\\}),\\s*\\{");
+            List<Object[]> orderList = new ArrayList<>();
+            
+            for (String orderStr : orders) {
+                orderStr = orderStr.trim();
+                if (!orderStr.startsWith("{")) {
+                    orderStr = "{" + orderStr;
+                }
+                if (!orderStr.endsWith("}")) {
+                    orderStr = orderStr + "}";
+                }
+                
+                String orderId = "", items = "", orderDate = "", status = "";
+                String[] parts = orderStr.split(",");
+                for (String part : parts) {
+                    part = part.trim();
+                    if (part.contains("\"orderId\"")) {
+                        orderId = part.split(":")[1].replace("\"", "").trim();
+                    } else if (part.contains("\"orderDate\"")) {
+                        orderDate = part.split(":")[1].replace("\"", "").trim();
+                    } else if (part.contains("\"status\"")) {
+                        status = part.split(":")[1].replace("\"", "").trim();
+                    }
+                }
+                
+                if (!orderId.isEmpty()) {
+                    orderList.add(new Object[] {orderId, items, orderDate, status});
+                }
+            }
+            
+            // 更新订单表格数据
+            ordersData = orderList.toArray(new Object[0][]);
+            if (ordersTableModel != null) {
+                ordersTableModel.setDataVector(ordersData, orderColumnNames);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
