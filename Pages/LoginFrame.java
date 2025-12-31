@@ -615,7 +615,8 @@ public class LoginFrame extends JFrame {
         DefaultTableModel tableModel = new DefaultTableModel(tableData, columnNames) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false;
+                // 允许"购买商品"列(索引2)进行编辑，以便触发滚动条交互
+                return column == 2;
             }
         };
 
@@ -686,8 +687,52 @@ public class LoginFrame extends JFrame {
         table.setShowHorizontalLines(true);
         table.setFillsViewportHeight(true);
 
-        // 设置"购买商品"列的渲染器
+        // 定义编辑器，支持滚动交互
+        class ItemListCellEditor extends AbstractCellEditor implements javax.swing.table.TableCellEditor {
+            private JTextArea textArea;
+            private JScrollPane scrollPane;
+            private OrderHistory.Order currentOrder;
+
+            public ItemListCellEditor() {
+                textArea = new JTextArea();
+                textArea.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
+                textArea.setEditable(false);
+                textArea.setLineWrap(true);
+                textArea.setWrapStyleWord(true);
+                
+                scrollPane = new JScrollPane(textArea);
+                scrollPane.setBorder(BorderFactory.createEmptyBorder());
+                scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+                scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+            }
+
+            @Override
+            public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+                if (value instanceof OrderHistory.Order) {
+                    currentOrder = (OrderHistory.Order) value;
+                    StringBuilder sb = new StringBuilder();
+                    for (OrderHistory.OrderItem item : currentOrder.getItems()) {
+                        sb.append(item.getName()).append(" - ").append(item.getQuantity()).append("个\n");
+                    }
+                    textArea.setText(sb.toString());
+                    textArea.setCaretPosition(0);
+                    
+                    textArea.setBackground(Color.WHITE);
+                    textArea.setForeground(Color.BLACK);
+                    scrollPane.getViewport().setBackground(Color.WHITE);
+                }
+                return scrollPane;
+            }
+
+            @Override
+            public Object getCellEditorValue() {
+                return currentOrder;
+            }
+        }
+
+        // 设置"购买商品"列的渲染器和编辑器
         table.getColumnModel().getColumn(2).setCellRenderer(itemListRenderer);
+        table.getColumnModel().getColumn(2).setCellEditor(new ItemListCellEditor());
 
         // 创建滚动面板
         JScrollPane scrollPane = new JScrollPane(table);

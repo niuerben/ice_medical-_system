@@ -286,9 +286,23 @@ public class ShopList {
         }
         message.append("\n总价: ").append(String.format("%.2f", cart.getTotalPrice())).append("元");
 
+        // 使用 JTextArea 和 JScrollPane 来显示长文本，支持超长数据滚动查看
+        
+        JTextArea textArea = new JTextArea(message.toString());
+        textArea.setEditable(false);
+        textArea.setLineWrap(true);
+        textArea.setWrapStyleWord(true);
+        textArea.setFont(new Font("Microsoft YaHei", Font.PLAIN, 14));
+        // 设置边距，让文本不紧贴边框
+        textArea.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new Dimension(400, 300)); // 设置合适的大小以支持滚动
+        scrollPane.setBorder(BorderFactory.createLineBorder(new Color(220, 220, 220)));
+
         // 添加"下单"按钮作为第一个选项
         Object[] options = { "下单", "清空购物车", "取消" };
-        int choice = JOptionPane.showOptionDialog(null, message.toString(), "购物车",
+        int choice = JOptionPane.showOptionDialog(null, scrollPane, "购物车",
                 JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
 
         if (choice == 1) { // 清空购物车
