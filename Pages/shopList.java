@@ -29,7 +29,7 @@ public class ShopList {
     // 顶部显示总价的标签（在 createTopPanel 中初始化）
     private JLabel totalPriceLabel;
     
-    // 当前用户名（假设为test）
+    // 当前用户名（默认为test）
     private String currentUser = "test";
 
     // 从JSON文件加载数据
@@ -114,6 +114,10 @@ public class ShopList {
             e.printStackTrace();
             medicineData = new Object[0][0];
         }
+    }
+
+    public ShopList(String username) {
+        this.currentUser = username;
     }
 
     // 创建购物面板
@@ -687,6 +691,7 @@ public class ShopList {
             DataInputStream dis = new DataInputStream(socket.getInputStream());
             boolean result = dis.readBoolean();
             socket.close();
+            System.out.println("订单保存成功，用户名：" + currentUser);
             return result;
         } catch (Exception e) {
             e.printStackTrace();

@@ -498,7 +498,7 @@ public class LoginFrame extends JFrame {
         JPanel contentPanel = new JPanel(new BorderLayout());
 
         // 创建药品列表面板
-        ShopList shop = new ShopList();
+        ShopList shop = new ShopList(username);
         JPanel shopPanel = shop.createShopPanel();
         contentPanel.add(shopPanel, BorderLayout.CENTER);
 
